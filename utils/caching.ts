@@ -1,35 +1,46 @@
 import { join } from 'path';
-import { writeFileSync, readFileSync, existsSync, unlinkSync } from 'fs';
+import { promises as fs, existsSync } from 'fs';
 
 export class Caching {
 
     constructor(private dir: string) { }
 
-    public writeCache<T>(file: string, data: T): void {
-        if (!data) throw 'No data was provided!';
+    public async writeCache<T>(file: string, data: T): Promise<void> {
+        if (!data) throw new Error('No data was provided!');
         const fullPath = this.validateJsonFile(file);
-        const initData = existsSync(fullPath) ? JSON.parse(readFileSync(fullPath, { encoding: 'utf8' })) : {};
-        writeFileSync(fullPath, JSON.stringify({ ...initData, ...data }), { encoding: 'utf8' });
+
+        let initData = {};
+        if (existsSync(fullPath)) {
+            const content = await fs.readFile(fullPath, { encoding: 'utf8' });
+            initData = JSON.parse(content);
+        }
+
+        await fs.writeFile(fullPath, JSON.stringify({ ...initData, ...data }), { encoding: 'utf8' });
     }
 
-    public checkCache<T>(file: string, key?: string): T | undefined {
+    public async checkCache<T>(file: string, key?: string): Promise<T | undefined> {
         const fullPath = this.validateJsonFile(file);
         if (!existsSync(fullPath)) return;
-        const data = JSON.parse(readFileSync(fullPath, { encoding: 'utf8' }));
+
+        const content = await fs.readFile(fullPath, { encoding: 'utf8' });
+        const data = JSON.parse(content);
         return key ? data[key] : data;
     }
 
-    public deleteRegistred(file: string, key: string): void { 
+    public async deleteRegistred(file: string, key: string): Promise<void> {
         const fullPath = this.validateJsonFile(file);
         if (!existsSync(fullPath)) return;
-        const data = JSON.parse(readFileSync(fullPath, { encoding: 'utf8' }));
+
+        const content = await fs.readFile(fullPath, { encoding: 'utf8' });
+        const data = JSON.parse(content);
         delete data[key];
-        writeFileSync(fullPath, JSON.stringify(data), { encoding: 'utf8' });
+
+        await fs.writeFile(fullPath, JSON.stringify(data), { encoding: 'utf8' });
     }
 
-    public clearRegistry(file: string): void {
+    public async clearRegistry(file: string): Promise<void> {
         const fullPath = this.validateJsonFile(file);
-        if (existsSync(fullPath)) unlinkSync(fullPath);
+        if (existsSync(fullPath)) await fs.unlink(fullPath);
     }
 
     private validateJsonFile(file: string): string {
@@ -46,8 +57,8 @@ export class LastUpdates {
         this.filePath = join(filePath);
     }
 
-    public check(file: string, timestamp: Date): boolean {
-        const data = this.getData();
+    public async check(file: string, timestamp: Date): Promise<boolean> {
+        const data = await this.getData();
         if (!data?.[file]?.date || !data?.[file]?.time) return false;
         const cached = data[file];
         try {
@@ -63,30 +74,31 @@ export class LastUpdates {
             }
             return true;
         } catch (error) {
-            console.log({ error });
+            console.log({ error }); // Keep original console log or switch to Logger if preferred? Sticking to original logic.
             return false;
         }
     }
 
-    public update(file: string, timestamp: Date): void {
-        const data = this.getData();
+    public async update(file: string, timestamp: Date): Promise<void> {
+        const data = await this.getData();
         const [date, time] = new Intl.DateTimeFormat('en-US', {
             timeStyle: 'medium',
             dateStyle: 'short',
             hour12: false,
         }).format(timestamp).split(', ');
         data[file] = { date, time };
-        writeFileSync(this.filePath, JSON.stringify(data), { encoding: 'utf8' });
+        await fs.writeFile(this.filePath, JSON.stringify(data), { encoding: 'utf8' });
     }
 
-    public reset(file: string): void {
-        const data = this.getData();
+    public async reset(file: string): Promise<void> {
+        const data = await this.getData();
         data[file] = {};
-        writeFileSync(this.filePath, JSON.stringify(data), { encoding: 'utf8' });
+        await fs.writeFile(this.filePath, JSON.stringify(data), { encoding: 'utf8' });
     }
 
-    private getData(): { [k: string]: IUpdate } {
+    private async getData(): Promise<{ [k: string]: IUpdate }> {
         if (!existsSync(this.filePath)) return {};
-        return JSON.parse(readFileSync(this.filePath, { encoding: 'utf8' })) ?? {};
+        const content = await fs.readFile(this.filePath, { encoding: 'utf8' });
+        return JSON.parse(content) ?? {};
     }
 }
