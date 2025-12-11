@@ -1,0 +1,14 @@
+{
+  "name": "app-name",
+  "version": "1.0.0",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "serve": "ts-node index.ts",
+    "playground": "ts-node playground.ts"
+  },
+  "devDependencies": {
+    "ts-node": "",
+    "typescript": ""
+  }
+}
