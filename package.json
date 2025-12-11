@@ -8,6 +8,7 @@
     "playground": "ts-node playground.ts"
   },
   "devDependencies": {
+    "@types/node": "",
     "ts-node": "",
     "typescript": ""
   }

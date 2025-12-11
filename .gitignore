@@ -1,2 +1,5 @@
 /cache/*.json
 playground.ts
+
+node_modules
+package-lock.json
