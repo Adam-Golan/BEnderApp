@@ -2,7 +2,7 @@ export interface IService<T = any> {
     create(payload: T): Promise<T>;
     retrieve(id: string): Promise<T>;
     update(id: string, payload: Partial<T>): Promise<T>;
-    delete(id: string): Promise<void>;
+    delete(id: string): Promise<T>;
 }
 
 export interface IWorkerMessage {
